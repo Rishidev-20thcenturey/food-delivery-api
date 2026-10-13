@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 
 type User = { id: string; name: string; email: string; role: string };
 type Session = { accessToken: string; expiresIn: number; user: User };
@@ -286,7 +287,7 @@ function AuthModal({ mode, setMode, close, onSuccess, showToast }: {
   onSuccess: (session: Session) => Promise<void>; showToast: (message: string) => void;
 }) {
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [submitting, setSubmitting] = useState(false);
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault(); setSubmitting(true);
     try {
       const session = await api<Session>(mode === "register" ? "/auth/register" : "/auth/login", json(mode === "register" ? { name, email, password } : { email, password }));
@@ -303,7 +304,7 @@ function AddressForm({ token, onSaved, showToast }: {
   const [form, setForm] = useState({ label: "Home", recipientName: "", recipientPhone: "", line1: "", city: "", state: "", postalCode: "" });
   const [saving, setSaving] = useState(false);
   const update = (key: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true);
     try {
       const address = await api<Address>("/me/addresses", json({ ...form, country: "IN", isDefault: true }), token);
