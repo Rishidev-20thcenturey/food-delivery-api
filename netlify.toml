@@ -1,0 +1,16 @@
+[build]
+  base = "."
+  command = "bash scripts/netlify-build.sh"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[edge_functions]]
+  function = "api-proxy"
+  path = "/api/v1/*"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
