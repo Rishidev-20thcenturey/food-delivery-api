@@ -1,0 +1,34 @@
+name: Materialize CraveDirect frontend source
+
+on:
+  push:
+    branches:
+      - feat/cravedirect-netlify-integration
+    paths:
+      - frontend-source.tar.gz
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract frontend source
+        run: |
+          test -f frontend-source.tar.gz
+          tar -xzf frontend-source.tar.gz
+          test -f frontend/package.json
+          rm frontend-source.tar.gz
+      - name: Commit native frontend files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend frontend-source.tar.gz
+          git commit -m "build: materialize CraveDirect frontend source"
+          git push
