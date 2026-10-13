@@ -17,7 +17,7 @@ type Address = { id: string; label?: string | null; recipientName: string; recip
 type Order = { id: string; orderNumber: string; status: string; restaurant: { name: string }; pricing: { totalMinor: number }; createdAt: string };
 
 const API = "/api/v1";
-const money = (minor = 0) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(minor / 100);
+const money = (minor = 0) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(minor / 100);
 const initials = (name: string) => name.split(/\s+/).slice(0, 2).map((s) => s[0]).join("").toUpperCase();
 
 async function api<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
@@ -89,7 +89,6 @@ export default function App() {
     } catch { setAddresses([]); }
   }, []);
 
-  useEffect(() => { void loadRestaurants(""); }, [loadRestaurants]);
   useEffect(() => {
     const handle = window.setTimeout(() => { void loadRestaurants(search); }, 220);
     return () => window.clearTimeout(handle);
