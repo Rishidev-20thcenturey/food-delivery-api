@@ -1,0 +1,237 @@
+name: Import public food places from OpenStreetMap
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Choose one bounded extract. Repeat the workflow for more regions."
+        type: choice
+        required: true
+        default: india-eastern
+        options:
+          - india-eastern
+          - india-north-eastern
+          - bangladesh
+          - nepal
+          - sri-lanka
+          - singapore
+          - bhutan
+          - cambodia
+          - iceland
+          - denmark
+          - austria
+          - switzerland
+          - portugal
+          - rwanda
+          - uganda
+          - costa-rica
+          - jamaica
+      mode:
+        description: "Always dry-run first; commit writes only discovery-place records."
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - commit
+      confirm_production:
+        description: "For commit only: I explicitly approve adding sourced public records to the live discovery directory."
+        type: boolean
+        required: true
+        default: false
+      confirm_target:
+        description: "For commit only: paste the exact database@host:port printed by a prior dry-run."
+        type: string
+        required: false
+
+  pull_request:
+    paths:
+      - ".github/workflows/discovery-global-import.yml"
+      - ".github/scripts/import_osm_places.py"
+      - ".github/scripts/test_import_osm_places.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cravedirect-discovery-osm-import
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependency
+        run: python -m pip install "psycopg[binary]==3.2.9"
+      - name: Syntax check
+        run: python -m py_compile .github/scripts/import_osm_places.py .github/scripts/test_import_osm_places.py
+      - name: Unit tests (no database access)
+        working-directory: .github/scripts
+        run: python -m unittest -v test_import_osm_places.py
+
+  import:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      REGION: ${{ inputs.region }}
+      MODE: ${{ inputs.mode }}
+      CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+      CONFIRM_TARGET: ${{ inputs.confirm_target }}
+      DISCOVERY_DATABASE_URL: ${{ secrets.DISCOVERY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate operator inputs and choose a fixed source URL
+        id: region
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$DISCOVERY_DATABASE_URL" ]]; then
+            echo "::error::Add the existing Neon connection string as repository Actions secret DISCOVERY_DATABASE_URL. Do not put it in workflow inputs or source code."
+            exit 1
+          fi
+          case "$REGION" in
+            india-eastern)
+              URL="https://download.geofabrik.de/asia/india/eastern-zone-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/india.html"
+              COUNTRY="IN" ;;
+            india-north-eastern)
+              URL="https://download.geofabrik.de/asia/india/north-eastern-zone-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/india.html"
+              COUNTRY="IN" ;;
+            bangladesh)
+              URL="https://download.geofabrik.de/asia/bangladesh-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/bangladesh.html"
+              COUNTRY="BD" ;;
+            nepal)
+              URL="https://download.geofabrik.de/asia/nepal-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/nepal.html"
+              COUNTRY="NP" ;;
+            sri-lanka)
+              URL="https://download.geofabrik.de/asia/sri-lanka-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/sri-lanka.html"
+              COUNTRY="LK" ;;
+            singapore)
+              URL="https://download.geofabrik.de/asia/singapore-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/singapore.html"
+              COUNTRY="SG" ;;
+            bhutan)
+              URL="https://download.geofabrik.de/asia/bhutan-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/bhutan.html"
+              COUNTRY="BT" ;;
+            cambodia)
+              URL="https://download.geofabrik.de/asia/cambodia-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/asia/cambodia.html"
+              COUNTRY="KH" ;;
+            iceland)
+              URL="https://download.geofabrik.de/europe/iceland-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/europe/iceland.html"
+              COUNTRY="IS" ;;
+            denmark)
+              URL="https://download.geofabrik.de/europe/denmark-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/europe/denmark.html"
+              COUNTRY="DK" ;;
+            austria)
+              URL="https://download.geofabrik.de/europe/austria-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/europe/austria.html"
+              COUNTRY="AT" ;;
+            switzerland)
+              URL="https://download.geofabrik.de/europe/switzerland-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/europe/switzerland.html"
+              COUNTRY="CH" ;;
+            portugal)
+              URL="https://download.geofabrik.de/europe/portugal-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/europe/portugal.html"
+              COUNTRY="PT" ;;
+            rwanda)
+              URL="https://download.geofabrik.de/africa/rwanda-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/africa/rwanda.html"
+              COUNTRY="RW" ;;
+            uganda)
+              URL="https://download.geofabrik.de/africa/uganda-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/africa/uganda.html"
+              COUNTRY="UG" ;;
+            costa-rica)
+              URL="https://download.geofabrik.de/central-america/costa-rica-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/central-america/costa-rica.html"
+              COUNTRY="CR" ;;
+            jamaica)
+              URL="https://download.geofabrik.de/central-america/jamaica-latest.osm.pbf"
+              PAGE="https://download.geofabrik.de/central-america/jamaica.html"
+              COUNTRY="JM" ;;
+            *)
+              echo "::error::Unknown region."
+              exit 2 ;;
+          esac
+          if [[ "$MODE" == "commit" && "$CONFIRM_PRODUCTION" != "true" ]]; then
+            echo "::error::A commit requires confirm_production=true. Run a dry-run first."
+            exit 2
+          fi
+          echo "download_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "source_page=$PAGE" >> "$GITHUB_OUTPUT"
+          echo "country=$COUNTRY" >> "$GITHUB_OUTPUT"
+          echo "Selected bounded region: $REGION ($COUNTRY)"
+          echo "Mode: $MODE"
+
+      - name: Install OSM PBF tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes osmium-tool
+
+      - name: Download the official regional extract
+        env:
+          DOWNLOAD_URL: ${{ steps.region.outputs.download_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 2400 \
+            "$DOWNLOAD_URL" --output /tmp/region.osm.pbf
+          echo "Downloaded extract size:"
+          du -h /tmp/region.osm.pbf
+          sha256sum /tmp/region.osm.pbf
+
+      - name: Keep only mapped food-place features
+        run: |
+          set -euo pipefail
+          osmium tags-filter /tmp/region.osm.pbf \
+            nwr/amenity=restaurant,cafe,fast_food,food_court,ice_cream,pub,bar,biergarten \
+            nwr/shop=bakery,pastry,confectionery,deli,cheese,chocolate \
+            --output /tmp/food-places.osm.pbf --overwrite
+          osmium cat /tmp/food-places.osm.pbf --output-format=osm \
+            --output /tmp/food-places.osm --overwrite
+          echo "Filtered XML size:"
+          du -h /tmp/food-places.osm
+
+      - name: Install importer dependency
+        run: python -m pip install "psycopg[binary]==3.2.9"
+
+      - name: Dry-run or explicitly confirmed live import
+        env:
+          COUNTRY: ${{ steps.region.outputs.country }}
+          SOURCE_PAGE: ${{ steps.region.outputs.source_page }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(
+            --xml /tmp/food-places.osm
+            --mode "$MODE"
+            --default-country "$COUNTRY"
+            --source-url "$SOURCE_PAGE"
+          )
+          if [[ "$MODE" == "commit" ]]; then
+            if [[ "$CONFIRM_PRODUCTION" != "true" || -z "$CONFIRM_TARGET" ]]; then
+              echo "::error::Commit requires both confirm_production=true and the exact target from a prior dry-run."
+              exit 2
+            fi
+            args+=(--confirm-production --confirm-target "$CONFIRM_TARGET")
+          fi
+          python .github/scripts/import_osm_places.py ${args[@]}
