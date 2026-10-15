@@ -319,7 +319,7 @@ def main() -> int:
 
     try:
         if args.mode == "commit":
-            with psycopg.connect(database_url, connect_timeout=20) as conn:
+            with psycopg.connect(database_url, connect_timeout=20, autocommit=True) as conn:
                 with conn.cursor() as cur:
                     cur.execute("SELECT to_regclass('public.discovery_places')")
                     if cur.fetchone()[0] is None:
