@@ -15,6 +15,7 @@
   <a href="#-quick-start">Quick start</a> &nbsp;·&nbsp;
   <a href="backend/docs/openapi.yaml">API specification</a> &nbsp;·&nbsp;
   <a href="backend/docs/FRONTEND_INTEGRATION.md">Frontend guide</a> &nbsp;·&nbsp;
+  <a href="backend/docs/DISCOVERY.md">Discovery guide</a> &nbsp;·&nbsp;
   <a href="backend/docs/INTEGRATION_STATUS.md">Test &amp; project status</a>
 </p>
 
@@ -33,14 +34,14 @@
 <table>
   <tr>
     <td align="center" width="33%">
-      <h2>51</h2>
+      <h2>54</h2>
       <strong>Documented API operations</strong><br/>
-      <sub>OpenAPI 3.1 contract</sub>
+      <sub>OpenAPI 3.1 contract, including 3 public discovery routes</sub>
     </td>
     <td align="center" width="33%">
-      <h2>125</h2>
-      <strong>Tests recorded as passing</strong><br/>
-      <sub>9 test files in the verification report</sub>
+      <h2>184</h2>
+      <strong>Backend tests passing</strong><br/>
+      <sub>12 test files, including 3 for the discovery directory</sub>
     </td>
     <td align="center" width="33%">
       <h2>4</h2>
@@ -58,6 +59,7 @@
 - [Quick start](#-quick-start)
 - [Useful commands](#-useful-commands)
 - [API overview](#-api-overview)
+- [Global food discovery](#-global-food-discovery)
 - [Frontend integration](#-frontend-integration)
 - [Verification](#-verification)
 - [Limitations and roadmap](#-limitations-and-roadmap)
@@ -94,6 +96,18 @@
     <td width="50%" valign="top">
       <h3>📘 Developer experience</h3>
       OpenAPI 3.1, consistent errors, pagination, request IDs, SQL migrations, demo seeds, and automated tests.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🌍 Global food discovery</h3>
+      A public, read-only directory of restaurants and cuisines worldwide, imported from open data with source
+      attribution, honest verification states, and links to each restaurant's own website, menu, and ordering page.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔗 A clear discover / order boundary</h3>
+      A discovery listing is never orderable by itself. Only listings an operator has explicitly linked to an
+      <code>ACTIVE</code> CraveDirect restaurant can be ordered, and the existing INR cash-on-delivery flow is unchanged.
     </td>
   </tr>
 </table>
@@ -205,6 +219,7 @@ Run these in `backend/`:
 | `npm run db:migrate` | Apply SQL migrations |
 | `npm run db:seed` | Populate development demo data |
 | `npm run db:embedded` | Start local development PostgreSQL |
+| `npm run db:import:discovery -- --help` | Import discovery data from a local file (dry run unless `--commit` is given) |
 
 ## 🔌 API overview
 
@@ -219,8 +234,32 @@ Every route is under `/api/v1` unless noted otherwise.
 | Restaurant owner | `/owner/restaurants`, `/owner/orders` |
 | Courier | `/courier/deliveries` |
 | Administrator | `/admin/users`, `/admin/restaurants`, `/admin/orders`, `/admin/audit-logs` |
+| Discovery (public) | `GET /discovery/places`, `GET /discovery/places/{id}`, `GET /discovery/facets` |
 
 See the [OpenAPI specification](backend/docs/openapi.yaml) for complete request and response schemas.
+
+## 🌍 Global food discovery
+
+The discovery directory (`/api/v1/discovery`) is a **separate, additive** feature. It does not change any existing
+endpoint, table, or order rule.
+
+- **Public and read-only.** No account is needed, and no account data is ever returned by these routes.
+- **Honest by construction.** Every listing carries its source, licence, attribution, and freshness, plus a
+  verification state (`SOURCE_LISTED`, `NEEDS_REVIEW`, `VERIFIED`). Fields a source did not report are `null` —
+  the API never invents a rating, a price range, or an open/closed state.
+- **International, not INR-shaped.** Countries are ISO 3166-1 alpha-2, postal codes are optional and
+  country-specific, coordinates and timezones are nullable, and optional menu prices stay in the source's own
+  currency with that currency's own minor-unit exponent. Discovery prices never reach the cart or checkout.
+- **Imported by an operator, never at runtime.** `npm run db:import:discovery` reads a local file (OpenStreetMap
+  XML or NDJSON), validates and normalises it, deduplicates on the provider's stable record id, and streams it in
+  bounded batches. It is a **dry run by default**, refuses to write to production, and never overwrites
+  owner-submitted or verified data.
+- **Attribution is part of the data.** OpenStreetMap imports are stored and displayed as
+  "© OpenStreetMap contributors" under ODbL 1.0.
+
+See the [discovery guide](backend/docs/DISCOVERY.md) for the schema, licensing decisions, the importer runbook,
+the safeguards, and the known limitations. The directory ships **empty**: coverage exists only after an operator
+runs an import against a database, and the UI says so rather than filling the gap with invented restaurants.
 
 ## 🤝 Frontend integration
 
@@ -231,6 +270,7 @@ Use these documents as the source of truth when connecting a web or mobile front
 | [Frontend integration guide](backend/docs/FRONTEND_INTEGRATION.md) | Customer, owner, courier, and admin flows, browser setup, and sample data |
 | [API contract](backend/docs/API_CONTRACT.md) | Authentication, errors, pricing, pagination, and order lifecycle |
 | [OpenAPI 3.1](backend/docs/openapi.yaml) | Endpoint and schema reference |
+| [Discovery guide](backend/docs/DISCOVERY.md) | Discovery data model, sources and licensing, importer runbook, safeguards, limits |
 | [Integration status](backend/docs/INTEGRATION_STATUS.md) | Test coverage, verification record, and open issues |
 
 **Browser note:** Requests that use the refresh-token cookie must include credentials (for Fetch, `credentials: "include"`), and the frontend origin must be permitted by `CORS_ORIGINS`. Keep the access token in memory rather than local storage.
@@ -238,6 +278,9 @@ Use these documents as the source of truth when connecting a web or mobile front
 ## ✅ Verification
 
 The integration report records **125 passing tests across 9 test files**, along with successful type-checking, linting, database migration, and build checks. The workflow badge at the top links to the latest GitHub Actions status; see the [full verification report](backend/docs/INTEGRATION_STATUS.md) for details and areas still awaiting automated coverage.
+The global discovery work on this branch adds **59 tests across 3 new files** (plus 3 contract assertions), bringing the
+backend suite to **184 tests across 12 files**, all passing locally together with `typecheck`, `lint`, `build`, and the
+frontend production build. No existing test was weakened or removed.
 
 ## 🛣️ Limitations and roadmap
 
@@ -249,6 +292,9 @@ This is an **MVP backend**, not a fully deployed production service.
 - **Account verification:** email and phone verification are not implemented.
 - **Images:** image fields accept URLs; file uploads are not included.
 - **Production hardening:** managed PostgreSQL, backups, monitoring, load testing, and an independent security review are still needed.
+- **Discovery coverage:** the directory starts empty and grows only through operator-run imports of licensed open data.
+  There is no structured menu data from OpenStreetMap, no cross-provider duplicate merging, no admin UI for verification,
+  and no interpretation of opening hours. Details are in the [discovery guide](backend/docs/DISCOVERY.md).
 
 ## 📁 Project structure
 
@@ -259,16 +305,18 @@ This is an **MVP backend**, not a fully deployed production service.
 │       └── backend.yml
 └── backend/
     ├── src/
-    │   ├── modules/       # Auth, restaurants, cart, checkout, orders, owner, courier, admin
-    │   ├── db/            # PostgreSQL connection, migrations, development seed
+    │   ├── modules/       # Auth, restaurants, cart, checkout, orders, owner, courier, admin, discovery
+    │   ├── db/            # PostgreSQL connection, migrations, development seed, discovery-import
     │   ├── middleware/    # Auth, validation, rate limiting, request IDs
     │   └── server.ts
-    ├── tests/             # API and database tests
+    ├── tests/             # API and database tests, discovery tests, synthetic discovery fixtures
     ├── docs/
     │   ├── openapi.yaml
     │   ├── API_CONTRACT.md
+    │   ├── DISCOVERY.md
     │   ├── FRONTEND_INTEGRATION.md
-    │   └── INTEGRATION_STATUS.md
+    │   ├── INTEGRATION_STATUS.md
+    │   └── migrations/    # Manual-only rollback scripts
     ├── .env.example
     └── package.json
 ```
@@ -279,5 +327,6 @@ This is an **MVP backend**, not a fully deployed production service.
   <sub>Built with TypeScript, Express, and PostgreSQL · API v1</sub><br/>
   <a href="backend/docs/INTEGRATION_STATUS.md">Status &amp; verification</a> ·
   <a href="backend/docs/FRONTEND_INTEGRATION.md">Frontend guide</a> ·
+  <a href="backend/docs/DISCOVERY.md">Discovery guide</a> ·
   <a href="backend/docs/openapi.yaml">API specification</a>
 </p>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import DiscoveryPanel from "./discovery/DiscoveryPanel";
 
 type User = { id: string; name: string; email: string; role: string };
 type Session = { accessToken: string; expiresIn: number; user: User };
@@ -112,6 +113,13 @@ export default function App() {
     finally { setMenuLoading(false); }
   };
 
+  // A discovery listing that an operator has linked to a real restaurant opens the very same order flow.
+  // Nothing about discovery invents its own cart, menu, or checkout path.
+  const openRestaurantById = async (restaurantId: string) => {
+    try { await openRestaurant(await api<Restaurant>(`/restaurants/${restaurantId}`)); }
+    catch (error) { showToast(error instanceof Error ? error.message : "That restaurant could not be opened on CraveDirect."); }
+  };
+
   const addItem = async (item: MenuItem) => {
     if (!token) { setAuthMode("login"); setAuthOpen(true); showToast("Sign in to add items to your cart."); return; }
     const send = (replaceExistingCart = false) => api<Cart>("/cart/items", json({ menuItemId: item.id, quantity: 1, replaceExistingCart }), token);
@@ -191,6 +199,7 @@ export default function App() {
         </a>
         <div className="header-location"><span className="pin">⌖</span><span><small>Deliver to</small><strong>{addresses.find((a) => a.id === selectedAddress)?.city ?? "Your neighbourhood"}</strong></span><span className="chevron">⌄</span></div>
         <div className="header-actions">
+          <button className="nav-link" onClick={() => document.getElementById("discover")?.scrollIntoView({ behavior: "smooth" })}>Discover the world</button>
           {user && <button className="nav-link" onClick={() => void openOrders()}>My orders</button>}
           <button className="cart-button" onClick={() => { if (!token && cartCount === 0) { setAuthOpen(true); return; } setCartOpen(true); }}><span className="cart-symbol">▱</span><span>Cart</span><b>{cartCount}</b></button>
           {user ? <button className="avatar-button" title={user.name} onClick={() => void signOut()}>{initials(user.name)}</button> : <button className="sign-in" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign in</button>}
@@ -237,6 +246,8 @@ export default function App() {
               </button>)}
             </div> : <div className="empty-state"><span>✳</span><h3>No places found just yet</h3><p>Try another dish, cuisine, or search term.</p><button className="secondary-button" onClick={() => { setQuery(""); setSearch(""); setCategory("All"); }}>Clear search</button></div>}
         </section>
+
+        <DiscoveryPanel onOrderRestaurant={openRestaurantById} />
 
         <section className="closing-banner"><div className="closing-spark">✦</div><div><div className="eyebrow">A LITTLE LOCAL MAGIC</div><h2>Good food brings us together.</h2><p>Every order supports the places that make a neighbourhood feel like home.</p></div><button onClick={() => document.getElementById("restaurants")?.scrollIntoView({ behavior: "smooth" })}>Explore the menu <span>↗</span></button></section>
       </main>

@@ -17,6 +17,7 @@ const IMPLEMENTED: string[] = [
   'post /auth/register', 'post /auth/login', 'post /auth/refresh', 'post /auth/logout', 'get /auth/me',
   'get /restaurants', 'get /restaurants/{restaurantId}', 'get /restaurants/{restaurantId}/menu',
   'get /restaurants/{restaurantId}/reviews', 'get /menu-items/{itemId}',
+  'get /discovery/places', 'get /discovery/places/{placeId}', 'get /discovery/facets',
   'get /me/addresses', 'post /me/addresses', 'patch /me/addresses/{addressId}', 'delete /me/addresses/{addressId}',
   'get /cart', 'delete /cart', 'post /cart/items', 'patch /cart/items/{itemId}', 'delete /cart/items/{itemId}',
   'post /checkout/preview', 'post /checkout',
