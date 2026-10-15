@@ -84,7 +84,6 @@ jobs:
       MODE: ${{ inputs.mode }}
       CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
       CONFIRM_TARGET: ${{ inputs.confirm_target }}
-      DISCOVERY_DATABASE_URL: ${{ secrets.DISCOVERY_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -94,6 +93,8 @@ jobs:
       - name: Validate operator inputs and choose a fixed source URL
         id: region
         shell: bash
+        env:
+          DISCOVERY_DATABASE_URL: ${{ secrets.DISCOVERY_DATABASE_URL }}
         run: |
           set -euo pipefail
           if [[ -z "$DISCOVERY_DATABASE_URL" ]]; then
@@ -218,6 +219,7 @@ jobs:
         env:
           COUNTRY: ${{ steps.region.outputs.country }}
           SOURCE_PAGE: ${{ steps.region.outputs.source_page }}
+          DISCOVERY_DATABASE_URL: ${{ secrets.DISCOVERY_DATABASE_URL }}
         shell: bash
         run: |
           set -euo pipefail
