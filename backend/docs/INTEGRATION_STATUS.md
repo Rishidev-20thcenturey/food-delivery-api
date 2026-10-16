@@ -60,7 +60,7 @@ The last recorded successful CI run for the integrated feature commit `b65137228
 | Backend test suite | 184 tests across 12 files reported passing | Backend CI run above |
 | Type-check, lint and build | Reported successful | Backend CI run above |
 
-These results are a historical verification record for that source commit, not a claim that this documentation edit itself ran the tests. The pull request that integrates the code into `main` should pass the backend and frontend workflows against the combined tree before merge. Check [all repository Actions runs](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions) for the latest status.
+The merge candidate (`fade8629ff670415121e4854c1cc79b6c642d988`) passed both workflows before [PR #7](https://github.com/Rishidev-20thcenturey/food-delivery-api/pull/7) was merged into `main` as [merge commit `d60bafd`](https://github.com/Rishidev-20thcenturey/food-delivery-api/commit/d60bafd1c616806f50547b48c07b752b664e304f). Backend CI reported **184 tests across 12 files passing** ([backend run](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions/runs/38849965898)); the frontend production build also passed ([frontend run](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions/runs/38849965925)). This records the CI results used for the merge. Check [all repository Actions runs](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions) for later changes.
 
 ## 4. Local development
 
