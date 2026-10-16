@@ -17,6 +17,7 @@ import { authRouter } from './modules/auth/routes.js';
 import { cartRouter } from './modules/cart/routes.js';
 import { checkoutRouter } from './modules/checkout/routes.js';
 import { courierRouter } from './modules/courier/routes.js';
+import { discoveryRouter } from './modules/discovery/routes.js';
 import { orderRouter } from './modules/orders/routes.js';
 import { ownerRouter } from './modules/owner/routes.js';
 import { menuItemRouter, restaurantRouter } from './modules/restaurants/routes.js';
@@ -76,6 +77,8 @@ export function createApp(env: Env): express.Express {
   app.use(`${API_PREFIX}/auth`, authRouter(env));
   app.use(`${API_PREFIX}/restaurants`, restaurantRouter);
   app.use(`${API_PREFIX}/menu-items`, menuItemRouter);
+  // Global food discovery: public, read-only directory. Kept separate from the orderable catalogue.
+  app.use(`${API_PREFIX}/discovery`, discoveryRouter);
   app.use(`${API_PREFIX}/me/addresses`, addressRouter);
   app.use(`${API_PREFIX}/cart`, cartRouter);
   app.use(`${API_PREFIX}/checkout`, checkoutRouter(env));

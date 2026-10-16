@@ -300,3 +300,74 @@ If you need one of these, ask the backend owner first so the contract can change
 - [ ] Cart item actions use the cart item ID, not the menu item ID.
 - [ ] Buttons are shown only for actions that the current status and role allow.
 - [ ] Error screens show the `message` and log the `requestId`.
+
+## 13. Global discovery directory (public, read-only)
+
+`/discovery/places`, `/discovery/places/{id}`, and `/discovery/facets` are a **separate catalogue** from
+`/restaurants`. They are public, need no token, and must never be mixed into the cart or checkout flows.
+Section 12's checklist still applies, plus the items below. The full design and licensing record is in
+[`DISCOVERY.md`](./DISCOVERY.md).
+
+A working reference implementation ships in this repository at `frontend/src/discovery/` (`types.ts`, `api.ts`,
+`format.ts`, `DiscoveryPanel.tsx`, `DiscoveryCard.tsx`, `DiscoveryDetail.tsx`), mounted from `App.tsx` as an
+extra homepage section.
+
+### 13.1 What the data means
+
+| Field | How to present it |
+| --- | --- |
+| `status.verification` | `SOURCE_LISTED` → "Source-listed information". `NEEDS_REVIEW` → "Information needs verification". `VERIFIED` → "Restaurant verified" plus `status.verifiedAt`. Never label imported data as owner-verified. |
+| `status.sourceListed` | A ready-made flag for the above. |
+| `ordering.available` | The **only** signal that a listing can be ordered here. When true, `ordering.restaurantId` is a real restaurant id: open `/restaurants/{id}` and use the normal cart and checkout. When false, offer the official links instead. |
+| `links.*` | The restaurant's own pages. Render as `<a target="_blank" rel="noopener noreferrer">`. Never in an iframe. |
+| `menu.available` / `menu.permission` | `permission: "NONE"` means no menu may be published — show "Menu not available" and the official menu link. Never synthesise dishes. |
+| `menu.sampleDishes`, `menu.matchedDishes` | Up to three names each, good for a card. `matchedDishes` answers a `q` or `dish` search. |
+| `source.*` | Attribution and freshness. `attribution` and `licence` must be displayed with the data; `updatedAt` may be `null`, and `importedAt` is always present. |
+| `location.timezoneKnown` | When false, do not show any local time. |
+| `openingHoursRaw` | The source's own string. Show it verbatim with a caveat. There is no open/closed flag in this API, and inventing one is worse than saying "not reported". |
+| Any `null` | Show a missing state. Do not fall back to a plausible value. |
+
+### 13.2 Prices are not INR
+
+Discovery prices are `{ amountMinor, currency, minorUnits, isEstimated }`, where `minorUnits` is that currency's
+own exponent:
+
+```ts
+const format = ({ amountMinor, currency, minorUnits }: DiscoveryPrice) =>
+  new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: minorUnits,
+    maximumFractionDigits: minorUnits,
+  }).format(amountMinor / 10 ** minorUnits);
+// 980 / JPY / 0 → ¥980    850 / EUR / 2 → €8.50    4500 / BHD / 3 → BD 4.500
+```
+
+The section 10 `money()` helper hardcodes INR and must not be reused here. Never convert a discovery price to
+INR, never add one to a cart, and never send one to `/checkout` — the server calculates order prices itself.
+
+### 13.3 Querying
+
+- Build the country selector, city suggestions, and cuisine chips from `/discovery/facets`. It returns only
+  values that have coverage, so a filter never leads to a dead end by construction.
+- `country` is ISO 3166-1 alpha-2 and unknown codes are rejected with `VALIDATION_ERROR`. `city` and `region`
+  are exact, case-insensitive matches; partial city text belongs in `q`.
+- `cuisine` accepts up to three comma-separated labels. `limit` defaults to 12 and caps at 24; `page` caps at
+  500. Use "load more" rather than deep pagination.
+- Text with nothing searchable in it (`%`, `!&|`) returns zero rows by design, so do not treat an empty result
+  as an error.
+- An empty catalogue is a valid, common answer. Explain that this region has no coverage yet, keep the filters
+  visible so the visitor can choose somewhere else, and never pad the grid with invented restaurants.
+- The directory is served by a free-tier backend that may be asleep. Handle a slow first response with a retry
+  affordance, and cancel superseded requests with `AbortController`.
+
+### 13.4 Discovery checklist
+
+- [ ] Discovery requests send no token and no `credentials` requirement of their own.
+- [ ] Imported listings are labelled source-listed, never verified.
+- [ ] "Order" affordances appear only when `ordering.available` is true, and they route to `/restaurants/{id}`.
+- [ ] External links use `rel="noopener noreferrer"` and are never framed.
+- [ ] Attribution and freshness from `source` are visible wherever discovery data is shown.
+- [ ] Discovery prices use their own currency and exponent, and never touch the cart.
+- [ ] `null` fields render as missing states; no rating, price range, or open/closed state is invented.
+- [ ] Empty, loading, error, and retry states are all handled.

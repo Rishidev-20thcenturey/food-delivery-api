@@ -1,0 +1,39 @@
+name: Frontend build
+
+on:
+  push:
+    branches:
+      - feat/cravedirect-netlify-integration
+    paths:
+      - "frontend/**"
+      - "netlify.toml"
+      - "netlify/**"
+      - "scripts/netlify-build.sh"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - "netlify.toml"
+      - "netlify/**"
+      - "scripts/netlify-build.sh"
+      - ".github/workflows/frontend.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install --no-audit --no-fund
+      - name: Type-check and build
+        working-directory: frontend
+        run: npm run build
