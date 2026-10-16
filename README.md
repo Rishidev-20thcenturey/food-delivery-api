@@ -50,6 +50,7 @@
 </p>
 
 <p align="center">
+  <a href="#-quick-start">Quick start</a> &nbsp;·&nbsp;
   <a href="https://cravedirect-web.netlify.app/">Live storefront</a> &nbsp;·&nbsp;
   <a href="https://cravedirect-api.onrender.com/api/v1/health">Live API health</a> &nbsp;·&nbsp;
   <a href="https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration/frontend">Frontend source</a> &nbsp;·&nbsp;
@@ -300,7 +301,7 @@ Use these documents as the source of truth when connecting a web or mobile front
 | [Frontend integration guide](backend/docs/FRONTEND_INTEGRATION.md) | Customer, owner, courier, and admin flows, browser setup, and sample data |
 | [API contract](backend/docs/API_CONTRACT.md) | Authentication, errors, pricing, pagination, and order lifecycle |
 | [OpenAPI 3.1](backend/docs/openapi.yaml) | Endpoint and schema reference |
-| [Integration status](backend/docs/INTEGRATION_STATUS.md) | Test coverage, verification record, and open issues |
+| [Main-branch backend status](backend/docs/INTEGRATION_STATUS.md) | Backend-baseline tests, verification record, and open issues |
 
 **Browser note:** Requests that use the refresh-token cookie must include credentials (for Fetch, `credentials: "include"`), and the frontend origin must be permitted by `CORS_ORIGINS`. Keep the access token in memory rather than local storage.
 
@@ -310,7 +311,7 @@ The latest integration-branch README records **184 backend tests across 12 test 
 
 ## 🛣️ Limitations and roadmap
 
-This is an **MVP backend**, not a fully deployed production service.
+The storefront and API demo are deployed, but CraveDirect is still an MVP and is not production-hardened or globally orderable end-to-end.
 
 - **Payments:** cash on delivery only; online payments are not implemented.
 - **Live tracking:** order status must be refreshed or polled; there are no push updates or WebSockets.
@@ -349,7 +350,8 @@ This is an **MVP backend**, not a fully deployed production service.
 
 <p align="center">
   <sub>Built with React, TypeScript, Express, and PostgreSQL · API v1</sub><br/>
-  <a href="backend/docs/INTEGRATION_STATUS.md">Status &amp; verification</a> ·
-  <a href="backend/docs/FRONTEND_INTEGRATION.md">Frontend guide</a> ·
-  <a href="backend/docs/openapi.yaml">API specification</a>
+  <a href="https://github.com/Rishidev-20thcenturey/food-delivery-api/blob/feat/cravedirect-netlify-integration/README.md">Current integration snapshot</a> ·
+  <a href="backend/docs/INTEGRATION_STATUS.md">Main-branch backend status</a> ·
+  <a href="https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration/frontend">Frontend source</a> ·
+  <a href="backend/docs/openapi.yaml">Main-branch API specification</a>
 </p>
