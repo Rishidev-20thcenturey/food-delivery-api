@@ -3,6 +3,7 @@ name: Frontend build
 on:
   push:
     branches:
+      - main
       - feat/cravedirect-netlify-integration
     paths:
       - "frontend/**"
