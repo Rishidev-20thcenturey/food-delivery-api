@@ -307,7 +307,7 @@ Use these documents as the source of truth when connecting a web or mobile front
 
 ## ✅ Verification
 
-The last recorded successful backend run on the integrated code passed **184 tests across 12 test files**, and the frontend production build also passed. The current pull request runs both backend and frontend CI against the combined tree before it is merged. Results can be checked in [GitHub Actions](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions).
+Pull request [#7](https://github.com/Rishidev-20thcenturey/food-delivery-api/pull/7) merged the integrated source into `main` at [commit `d60bafd`](https://github.com/Rishidev-20thcenturey/food-delivery-api/commit/d60bafd1c616806f50547b48c07b752b664e304f) after the combined tree passed CI. Backend CI reported **184 passing tests across 12 files** ([backend run](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions/runs/38849965898)); the frontend production build passed as well ([frontend run](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions/runs/38849965925)). Check [GitHub Actions](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions) for subsequent runs.
 
 ## 🛣️ Limitations and roadmap
 
