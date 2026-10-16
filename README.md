@@ -41,7 +41,7 @@
 </table>
 
 <p align="center">
-  <a href="https://github.com/Rishidev-20thcenturey/-DATABASE-/actions/workflows/backend.yml"><img src="https://github.com/Rishidev-20thcenturey/-DATABASE-/actions/workflows/backend.yml/badge.svg?branch=main" alt="Backend CI status" /></a>
+  <a href="https://github.com/Rishidev-20thcenturey/food-delivery-api/actions/workflows/backend.yml"><img src="https://github.com/Rishidev-20thcenturey/food-delivery-api/actions/workflows/backend.yml/badge.svg?branch=main" alt="Backend CI status" /></a>
   <img src="https://img.shields.io/badge/Node.js-20.19%2B-339933?logo=node.js&amp;logoColor=white" alt="Node.js 20.19+" />
   <img src="https://img.shields.io/badge/TypeScript-typed-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Express-5-111827?logo=express&amp;logoColor=white" alt="Express 5" />
@@ -50,10 +50,12 @@
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick start</a> &nbsp;·&nbsp;
-  <a href="backend/docs/openapi.yaml">API specification</a> &nbsp;·&nbsp;
+  <a href="https://cravedirect-web.netlify.app/">Live storefront</a> &nbsp;·&nbsp;
+  <a href="https://cravedirect-api.onrender.com/api/v1/health">Live API health</a> &nbsp;·&nbsp;
+  <a href="https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration/frontend">Frontend source</a> &nbsp;·&nbsp;
+  <a href="backend/docs/openapi.yaml">Main-branch API specification</a> &nbsp;·&nbsp;
   <a href="backend/docs/FRONTEND_INTEGRATION.md">Frontend guide</a> &nbsp;·&nbsp;
-  <a href="backend/docs/INTEGRATION_STATUS.md">Test &amp; project status</a>
+  <a href="https://github.com/Rishidev-20thcenturey/food-delivery-api/blob/feat/cravedirect-netlify-integration/backend/docs/DISCOVERY.md">Global discovery guide</a>
 </p>
 
 <p align="center">
@@ -61,8 +63,8 @@
   Browse restaurants, manage carts, calculate prices safely, place orders, and coordinate owner, courier, and admin workflows.
 </p>
 
-> [!NOTE]
-> This repository contains the **backend API and database setup**, not the frontend website. It is an MVP backend and is not yet a fully deployed production service.
+> [!IMPORTANT]
+> **Live deployment:** [CraveDirect storefront](https://cravedirect-web.netlify.app/) is published on Netlify and uses the [Render-hosted API](https://cravedirect-api.onrender.com/api/v1/health). The current integrated frontend and global-discovery implementation lives on the [feat/cravedirect-netlify-integration branch](https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration). The default main branch still contains the earlier backend baseline, so its source tree and verification report do not yet mirror every feature in the live integration branch. CraveDirect is an MVP/demo, not a production-ready, globally orderable marketplace.
 
 ---
 
@@ -71,14 +73,14 @@
 <table>
   <tr>
     <td align="center" width="33%">
-      <h2>51</h2>
+      <h2>54</h2>
       <strong>Documented API operations</strong><br/>
-      <sub>OpenAPI 3.1 contract</sub>
+      <sub>Latest integration branch, including discovery</sub>
     </td>
     <td align="center" width="33%">
-      <h2>125</h2>
-      <strong>Tests recorded as passing</strong><br/>
-      <sub>9 test files in the verification report</sub>
+      <h2>184</h2>
+      <strong>Backend tests recorded as passing</strong><br/>
+      <sub>Latest integration-branch report, 12 test files</sub>
     </td>
     <td align="center" width="33%">
       <h2>4</h2>
@@ -96,6 +98,7 @@
 - [Quick start](#-quick-start)
 - [Useful commands](#-useful-commands)
 - [API overview](#-api-overview)
+- [Global food discovery](#-global-food-discovery)
 - [Frontend integration](#-frontend-integration)
 - [Verification](#-verification)
 - [Limitations and roadmap](#-limitations-and-roadmap)
@@ -134,18 +137,30 @@
       OpenAPI 3.1, consistent errors, pagination, request IDs, SQL migrations, demo seeds, and automated tests.
     </td>
   </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🖥️ Live customer storefront</h3>
+      The deployed React and TypeScript interface supports restaurant search, cuisine filters, menu browsing, customer accounts, cart management, delivery addresses, cash-on-delivery checkout, and order history.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🌍 Global food discovery</h3>
+      A separate public, read-only directory with place, country, city, and cuisine filters. External listings are discoverable but are not automatically orderable through CraveDirect.
+    </td>
+  </tr>
 </table>
 
 ## 🏗️ Architecture
 
 ```mermaid
 flowchart TD
-    Client["Web / Mobile Frontend"] --> API["Express 5 API<br/>/api/v1"]
-    API --> Middleware["Security · Auth · Validation<br/>Rate limits · Request IDs"]
-    Middleware --> Modules["API Modules<br/>Auth · Catalogue · Cart · Checkout<br/>Orders · Owner · Courier · Admin"]
-    Modules --> DB[("PostgreSQL")]
-    API -.-> Spec["OpenAPI 3.1<br/>/api/v1/openapi.yaml"]
-    Docs["Frontend Integration Guide"] -.-> Client
+    Browser["Customer browser"] --> Netlify["React + TypeScript storefront<br/>Netlify"]
+    Netlify -->|"/api/v1/* proxy"| API["Express 5 API<br/>Render"]
+    API --> Orders["Auth · Catalogue · Cart<br/>Checkout · Orders · Owner · Courier · Admin"]
+    API --> Discovery["Public read-only discovery routes"]
+    Orders --> DB[("PostgreSQL")]
+    Discovery --> DB
+    API -.-> Spec["OpenAPI 3.1<br/>API specification"]
+    Discovery -.-> External["External restaurant websites,<br/>menus and ordering links"]
 ```
 
 The server is the source of truth for prices and order rules. Monetary amounts use integer **paise** (`19900` means ₹199.00), not floating-point currency values.
@@ -154,7 +169,10 @@ The server is the source of truth for prices and order rules. Monetary amounts u
 
 | Layer | Technology |
 | --- | --- |
-| Runtime | Node.js 20.19+ |
+| Frontend | React 19, TypeScript, Vite |
+| Frontend hosting | Netlify |
+| Backend runtime | Node.js 20.19+ |
+| API hosting | Render |
 | Language | TypeScript |
 | HTTP server | Express 5 |
 | Database | PostgreSQL |
@@ -163,6 +181,8 @@ The server is the source of truth for prices and order rules. Monetary amounts u
 | API documentation | OpenAPI 3.1 |
 
 ## 🚀 Quick start
+
+> The commands below set up the backend baseline on main. The current integrated UI and global-discovery work are on the [feat/cravedirect-netlify-integration branch](https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration).
 
 ### Prerequisites
 
@@ -257,10 +277,21 @@ Every route is under `/api/v1` unless noted otherwise.
 | Restaurant owner | `/owner/restaurants`, `/owner/orders` |
 | Courier | `/courier/deliveries` |
 | Administrator | `/admin/users`, `/admin/restaurants`, `/admin/orders`, `/admin/audit-logs` |
+| Public discovery (integration branch) | `GET /discovery/places`, `GET /discovery/places/{id}`, `GET /discovery/facets` |
 
-See the [OpenAPI specification](backend/docs/openapi.yaml) for complete request and response schemas.
+The three discovery operations are documented in the [latest integration-branch OpenAPI spec](https://github.com/Rishidev-20thcenturey/food-delivery-api/blob/feat/cravedirect-netlify-integration/backend/docs/openapi.yaml). The [main-branch API specification](backend/docs/openapi.yaml) describes the earlier backend baseline.
+
+## 🌍 Global food discovery
+
+The latest integration branch adds a public, read-only restaurant directory alongside the existing CraveDirect orderable catalogue. Visitors can search and filter external places by text, country, city, cuisine, and related facets. Listings may include source attribution and links to a restaurant's own website, menu, or official ordering page.
+
+**Discovery is not worldwide ordering.** Imported places do not automatically become CraveDirect merchants. A listing can use CraveDirect's cart and checkout only after an operator explicitly links it to an active CraveDirect restaurant. The existing ordering flow remains India-focused and cash-on-delivery only. Directory coverage depends on permitted data being imported; the implementation does not imply that every restaurant worldwide is listed.
+
+See the [global discovery guide on the integration branch](https://github.com/Rishidev-20thcenturey/food-delivery-api/blob/feat/cravedirect-netlify-integration/backend/docs/DISCOVERY.md) for data sources, licensing, imports, safeguards, and limitations.
 
 ## 🤝 Frontend integration
+
+The live storefront source is in the [frontend directory on the integration branch](https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration/frontend). Netlify routes /api/v1 requests through an edge proxy to the API, while local Vite development uses a proxy to the local API server.
 
 Use these documents as the source of truth when connecting a web or mobile frontend:
 
@@ -275,7 +306,7 @@ Use these documents as the source of truth when connecting a web or mobile front
 
 ## ✅ Verification
 
-The integration report records **125 passing tests across 9 test files**, along with successful type-checking, linting, database migration, and build checks. The workflow badge at the top links to the latest GitHub Actions status; see the [full verification report](backend/docs/INTEGRATION_STATUS.md) for details and areas still awaiting automated coverage.
+The latest integration-branch README records **184 backend tests across 12 test files**, with successful type-checking, linting, backend build, and frontend production build. These are the branch's recorded verification results, not a fresh test run performed for this documentation update. The older backend-only report on main records **125 tests across 9 files**. Check the [repository's GitHub Actions](https://github.com/Rishidev-20thcenturey/food-delivery-api/actions) for current CI results and see the [latest integration-branch README](https://github.com/Rishidev-20thcenturey/food-delivery-api/blob/feat/cravedirect-netlify-integration/README.md) for its reported project snapshot.
 
 ## 🛣️ Limitations and roadmap
 
@@ -286,7 +317,8 @@ This is an **MVP backend**, not a fully deployed production service.
 - **Promotions:** coupons and discounts are not implemented.
 - **Account verification:** email and phone verification are not implemented.
 - **Images:** image fields accept URLs; file uploads are not included.
-- **Production hardening:** managed PostgreSQL, backups, monitoring, load testing, and an independent security review are still needed.
+- **Global discovery:** available coverage depends on permitted source data being imported; the directory does not guarantee complete worldwide coverage, verified opening hours, or structured menus for every listing.
+- **Production hardening:** managed PostgreSQL operations, backups, monitoring, load testing, and an independent security review are still needed.
 
 ## 📁 Project structure
 
@@ -311,10 +343,12 @@ This is an **MVP backend**, not a fully deployed production service.
     └── package.json
 ```
 
+> **Source layout note:** The directory tree above describes the backend baseline on main. The integrated frontend, Netlify configuration, and global-discovery implementation are maintained on the [integration branch](https://github.com/Rishidev-20thcenturey/food-delivery-api/tree/feat/cravedirect-netlify-integration).
+
 ---
 
 <p align="center">
-  <sub>Built with TypeScript, Express, and PostgreSQL · API v1</sub><br/>
+  <sub>Built with React, TypeScript, Express, and PostgreSQL · API v1</sub><br/>
   <a href="backend/docs/INTEGRATION_STATUS.md">Status &amp; verification</a> ·
   <a href="backend/docs/FRONTEND_INTEGRATION.md">Frontend guide</a> ·
   <a href="backend/docs/openapi.yaml">API specification</a>
