@@ -81,7 +81,7 @@
     <td align="center" width="33%">
       <h2>184</h2>
       <strong>Backend tests recorded as passing</strong><br/>
-      <sub>12 test files; CI verifies the merge candidate</sub>
+      <sub>12 test files; mainline CI passed</sub>
     </td>
     <td align="center" width="33%">
       <h2>4</h2>
