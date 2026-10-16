@@ -65,7 +65,7 @@
 </p>
 
 > [!IMPORTANT]
-> **Live deployment and source:** The integrated React/Vite storefront, API, and global-discovery implementation are included in this branch and are intended to be merged into `main`. The live [storefront](https://cravedirect-web.netlify.app/) is hosted on Netlify and uses the [Render API](https://cravedirect-api.onrender.com/api/v1/health). GitHub source updates do not change Netlify or Render settings automatically; deployment behavior still depends on the host configuration. CraveDirect is an MVP/demo, not a production-ready, globally orderable marketplace.
+> **Live deployment and source:** The React/Vite storefront, API, and global-discovery implementation are part of the integrated CraveDirect codebase. The live [storefront](https://cravedirect-web.netlify.app/) is hosted on Netlify and uses the [Render API](https://cravedirect-api.onrender.com/api/v1/health). GitHub source updates do not change Netlify or Render settings automatically; deployment behavior still depends on the host configuration. CraveDirect is an MVP/demo, not a production-ready, globally orderable marketplace.
 
 ---
 
@@ -332,19 +332,20 @@ The storefront and API demo are deployed, but CraveDirect is still an MVP and is
 ├── netlify/
 │   └── edge-functions/             # Same-origin API proxy
 ├── backend/
-    ├── src/
-    │   ├── modules/       # Auth, restaurants, discovery, cart, checkout, orders, owner, courier, admin
-    │   ├── db/            # PostgreSQL connection, migrations, seeds and discovery importer
-    │   ├── middleware/    # Auth, validation, rate limiting, request IDs
-    │   └── server.ts
-    ├── tests/             # API and database tests
-    ├── docs/
-    │   ├── openapi.yaml
-    │   ├── API_CONTRACT.md
-    │   ├── FRONTEND_INTEGRATION.md
-    │   └── INTEGRATION_STATUS.md
-    ├── .env.example
-    └── package.json
+│   ├── src/
+│   │   ├── modules/       # Auth, restaurants, discovery, cart, checkout, orders, owner, courier, admin
+│   │   ├── db/            # PostgreSQL connection, migrations, seeds and discovery importer
+│   │   ├── middleware/    # Auth, validation, rate limiting, request IDs
+│   │   └── server.ts
+│   ├── tests/             # API and database tests
+│   ├── docs/
+│   │   ├── openapi.yaml
+│   │   ├── API_CONTRACT.md
+│   │   ├── DISCOVERY.md
+│   │   ├── FRONTEND_INTEGRATION.md
+│   │   └── INTEGRATION_STATUS.md
+│   ├── .env.example
+│   └── package.json
 ├── netlify.toml
 ├── render.yaml
 └── scripts/                       # Build and deployment notes
