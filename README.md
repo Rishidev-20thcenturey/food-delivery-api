@@ -1,6 +1,44 @@
+<h1 align="center">CraveDirect</h1>
+
 <p align="center">
-  <img src="assets/readme-hero.svg" alt="Custom Food Delivery API architecture banner" width="100%" />
+  <strong>Your cravings. Handled.</strong><br />
+  A food discovery storefront connecting people with local favourites and new places to explore.
 </p>
+
+<p align="center">
+  <a href="https://cravedirect-web.netlify.app/"><strong>↗ Visit the live CraveDirect website</strong></a>
+</p>
+
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://cravedirect-web.netlify.app/">
+        <img src="Screenshot_20261016-092616%20%282%29.png" alt="CraveDirect home page and hero section" width="100%" />
+      </a>
+      <p align="center"><strong>Storefront</strong></p>
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://cravedirect-web.netlify.app/">
+        <img src="Screenshot_20261016-092627%20%281%29.png" alt="CraveDirect worldwide food discovery search and filters" width="100%" />
+      </a>
+      <p align="center"><strong>Discover food</strong></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://cravedirect-web.netlify.app/">
+        <img src="Screenshot_20261016-092634%20%281%29.png" alt="CraveDirect restaurant discovery cards and cuisine listings" width="100%" />
+      </a>
+      <p align="center"><strong>Restaurant listings</strong></p>
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://cravedirect-web.netlify.app/">
+        <img src="Screenshot_20261016-092639%20%281%29.png" alt="CraveDirect lower discovery section, attribution and footer" width="100%" />
+      </a>
+      <p align="center"><strong>Discovery experience</strong></p>
+    </td>
+  </tr>
+</table>
 
 <p align="center">
   <a href="https://github.com/Rishidev-20thcenturey/-DATABASE-/actions/workflows/backend.yml"><img src="https://github.com/Rishidev-20thcenturey/-DATABASE-/actions/workflows/backend.yml/badge.svg?branch=main" alt="Backend CI status" /></a>
