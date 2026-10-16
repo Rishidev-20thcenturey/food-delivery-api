@@ -13,13 +13,14 @@
 5. Wait for migrations and check `GET https://YOUR-API/api/v1/health`, then `GET https://YOUR-API/api/v1/ready` (the latter requires a connected database).
 6. Ensure there are active restaurants, categories and menu items. An empty database means the public catalogue is empty; the development seed intentionally refuses to run with `NODE_ENV=production`.
 
-## 2. Deploy the frontend
-1. In Netlify, choose **Add new site → Import an existing project → GitHub** and select `Rishidev-20thcenturey/food-delivery-api`.
-2. Choose branch `feat/cravedirect-netlify-integration` for the initial preview, or merge the reviewed PR and use `main` afterwards.
-3. The repository's `netlify.toml` sets the build command and publish directory. Do not override it with a backend build command.
+## 2. Connect and automate the frontend deployment
+1. Use the existing Netlify site `cravedirect-web`; do not create a second site unless the existing site cannot be linked.
+2. In Netlify, confirm the repository is `Rishidev-20thcenturey/food-delivery-api`. Set the **production branch to `main`**. If the site is not linked to GitHub, connect this repository and select `main`.
+3. The repository's `netlify.toml` already defines the build command, Node.js version, publish directory, SPA fallback, and same-origin `/api/v1/*` Edge Function proxy. Keep these settings; do not replace them with a backend build command.
 4. In Netlify's runtime/Functions environment scope, set `BACKEND_API_ORIGIN` to only the API origin, e.g. `https://cravedirect-api.onrender.com` (no `/api/v1`, no path, no secret).
-5. Copy the exact deployed Netlify origin into backend `CORS_ORIGINS`, then redeploy the backend. Redeploy the frontend after setting `BACKEND_API_ORIGIN`.
-6. Do not set `VITE_API_URL` to the API host; the browser should call the relative `/api/v1` same-origin proxy so the HttpOnly refresh cookie remains first-party.
+5. Copy the exact production Netlify origin into the backend's `CORS_ORIGINS`, then redeploy the backend if that value changes. Redeploy the frontend after setting `BACKEND_API_ORIGIN`.
+6. Keep `VITE_API_URL` unset; the browser should call the relative `/api/v1` same-origin proxy so the HttpOnly refresh cookie remains first-party.
+7. After the site is linked to GitHub and production branch is `main`, future commits merged into `main` should trigger Netlify production builds automatically. The GitHub Frontend build workflow also type-checks and builds frontend changes on `main`; check both Netlify deploy status and GitHub Actions after the first switch.
 
 ## 3. Acceptance tests
 - [ ] `GET /api/v1/health` returns healthy; `GET /api/v1/ready` reports database readiness.
