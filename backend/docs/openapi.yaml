@@ -21,6 +21,7 @@ tags:
   - name: System
   - name: Auth
   - name: Restaurants
+  - name: Discovery
   - name: Addresses
   - name: Cart
   - name: Checkout
@@ -336,6 +337,119 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/MenuItem' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /discovery/places:
+    get:
+      operationId: getDiscoveryPlaces
+      tags: [Discovery]
+      summary: Search the global food-discovery directory
+      description: |
+        Public, read-only. No authentication.
+
+        This is an **independent directory of external restaurant listings**, separate from the orderable
+        catalogue at `/restaurants`. A discovery listing is never orderable by itself: `ordering.available`
+        is true only when an operator has explicitly linked the listing to an ACTIVE CraveDirect restaurant.
+        An external website, menu, or ordering link is not an order.
+
+        Fields the source did not report are `null`. Nothing is inferred: there is no rating, no price
+        range, and no open/closed state, because the source data does not support one.
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/DiscoveryPage' }
+        - { $ref: '#/components/parameters/DiscoveryLimit' }
+        - in: query
+          name: q
+          schema: { type: string, minLength: 1, maxLength: 80 }
+          description: |
+            Prefix full-text search over name (highest weight), cuisines, city, region, and country, plus
+            dish names from menus that are permitted to be published. Returns no results when the text
+            contains nothing searchable.
+        - in: query
+          name: dish
+          schema: { type: string, minLength: 1, maxLength: 80 }
+          description: Prefix search restricted to permitted structured menu items. Matching dishes are returned in `menu.matchedDishes`.
+        - in: query
+          name: country
+          schema: { type: string, pattern: '^[A-Za-z]{2}$' }
+          description: ISO 3166-1 alpha-2 code, case-insensitive. Unrecognised codes are rejected with `VALIDATION_ERROR`.
+        - in: query
+          name: city
+          schema: { type: string, minLength: 1, maxLength: 120 }
+          description: Exact city match, case-insensitive. Use `q` for partial city text.
+        - in: query
+          name: region
+          schema: { type: string, minLength: 1, maxLength: 120 }
+          description: Exact state/region match, case-insensitive.
+        - in: query
+          name: cuisine
+          schema: { type: string, minLength: 1, maxLength: 180 }
+          description: Up to three comma-separated cuisine labels, matched case-insensitively (OR).
+        - in: query
+          name: hasMenu
+          schema: { type: string, enum: ['true', 'false'] }
+          description: When `true`, only listings with a permitted, published structured menu.
+        - in: query
+          name: orderable
+          schema: { type: string, enum: ['true', 'false'] }
+          description: When `true`, only listings linked to an ACTIVE CraveDirect restaurant.
+        - in: query
+          name: sort
+          schema: { type: string, enum: [name, newest, updated, country], default: name }
+          description: '`newest` is by import time, `updated` by the source-reported update time.'
+      responses:
+        '200':
+          description: A page of discovery listings.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/DiscoveryPlaceSummary' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /discovery/places/{placeId}:
+    get:
+      operationId: getDiscoveryPlacesPlaceId
+      tags: [Discovery]
+      summary: One published discovery listing, with its menu preview when one is permitted
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/PlaceId' }
+      responses:
+        '200':
+          description: |
+            The listing. `menuPreview.sections` is empty unless `menuPreview.permission` is
+            `OWNER_SUBMITTED` or `SOURCE_PERMITTED`; `menuPreview.reason` then explains what to show instead.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/DiscoveryPlaceDetail' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /discovery/facets:
+    get:
+      operationId: getDiscoveryFacets
+      tags: [Discovery]
+      summary: Bounded filter values that exist in the published directory
+      description: |
+        Public, read-only. Use this to populate the country selector, city suggestions, and cuisine chips
+        so the UI never offers a filter that has no coverage. Counts describe published listings only.
+      security: []
+      responses:
+        '200':
+          description: Available countries, cities, and cuisines with counts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/DiscoveryFacets' }
 
   /me/addresses:
     get:
@@ -1411,6 +1525,22 @@ components:
       name: userId
       required: true
       schema: { $ref: '#/components/schemas/Uuid' }
+    PlaceId:
+      in: path
+      name: placeId
+      required: true
+      description: Discovery listing ID (from `/discovery/places`). Not a restaurant ID.
+      schema: { $ref: '#/components/schemas/Uuid' }
+    DiscoveryPage:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1, maximum: 500, default: 1 }
+      description: Deep offsets are rejected rather than scanned, so the directory stays cheap on a free tier.
+    DiscoveryLimit:
+      in: query
+      name: limit
+      schema: { type: integer, minimum: 1, maximum: 24, default: 12 }
+      description: Deliberately smaller than the orderable catalogue's maximum of 50.
 
   responses:
     ValidationError:
@@ -1955,3 +2085,176 @@ components:
         entityId: { type: string }
         details: { type: object, additionalProperties: true }
         createdAt: { type: string, format: date-time }
+
+    DiscoveryCountry:
+      type: object
+      properties:
+        code: { type: string, pattern: '^[A-Z]{2}$', description: ISO 3166-1 alpha-2. }
+        name: { type: string, description: English short name. Falls back to the code when unknown. }
+
+    DiscoveryLinks:
+      type: object
+      description: |
+        Official external links, exactly as the source reported them. Always http(s). The API never fetches
+        these URLs; clients should open them in a new tab with `rel="noopener noreferrer"`.
+      properties:
+        website: { type: [string, 'null'], format: uri }
+        menu: { type: [string, 'null'], format: uri }
+        ordering: { type: [string, 'null'], format: uri, description: An external ordering page. Not an order placed through CraveDirect. }
+
+    DiscoveryVerificationStatus:
+      type: object
+      properties:
+        verification:
+          type: string
+          enum: [SOURCE_LISTED, NEEDS_REVIEW, VERIFIED]
+          description: '`SOURCE_LISTED` means published as reported by the source and not confirmed by the restaurant.'
+        verifiedAt: { type: [string, 'null'], format: date-time }
+        sourceListed: { type: boolean, description: 'True when the data is imported and not verified. Must be labelled as source-listed in the UI.' }
+
+    DiscoveryMenuState:
+      type: object
+      properties:
+        available: { type: boolean, description: True only when a menu may be published AND has dishes. }
+        permission:
+          type: string
+          enum: [NONE, OWNER_SUBMITTED, SOURCE_PERMITTED]
+          description: Why a menu may be shown at all. `NONE` means show the official menu link instead.
+        itemCount: { type: integer, description: 0 when permission is NONE. }
+        sampleDishes: { type: array, maxItems: 3, items: { type: string } }
+        matchedDishes: { type: array, maxItems: 3, items: { type: string }, description: 'Dishes matched by q or dish.' }
+
+    DiscoveryOrdering:
+      type: object
+      properties:
+        available: { type: boolean, description: True only when linked to an ACTIVE CraveDirect restaurant. }
+        restaurantId: { type: [string, 'null'], format: uuid, description: 'Use with /restaurants/{restaurantId} to order.' }
+        restaurantName: { type: [string, 'null'] }
+        acceptingOrders: { type: [boolean, 'null'], description: Null when there is no linked restaurant. }
+
+    DiscoverySource:
+      type: object
+      description: Provenance and freshness. Attribution must be shown wherever this data is displayed.
+      properties:
+        name: { type: string, example: OpenStreetMap }
+        url: { type: [string, 'null'], format: uri }
+        recordUrl: { type: [string, 'null'], format: uri, description: 'This exact record in the source, so a reviewer can check it.' }
+        licence: { type: [string, 'null'], example: ODbL-1.0 }
+        attribution: { type: string, example: © OpenStreetMap contributors }
+        updatedAt: { type: [string, 'null'], format: date-time, description: 'Source-reported update time, when the source provides one.' }
+        importedAt: { type: string, format: date-time }
+
+    DiscoveryPrice:
+      type: object
+      description: |
+        A discovery price. Integer minor units in the currency the source reported, with that currency's own
+        exponent: 980/JPY/0 is ¥980, 850/EUR/2 is €8.50, 4500/BHD/3 is BD 4.500. Discovery prices are never
+        converted to INR and never take part in cart or checkout pricing.
+      properties:
+        amountMinor: { type: integer, minimum: 0 }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        minorUnits: { type: integer, minimum: 0, maximum: 4 }
+        isEstimated: { type: boolean }
+
+    DiscoveryMenuItem:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        dietaryLabels: { type: array, items: { type: string } }
+        price: { oneOf: [{ $ref: '#/components/schemas/DiscoveryPrice' }, { type: 'null' }] }
+        sourceAttribution: { type: [string, 'null'] }
+
+    DiscoveryMenuSection:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/DiscoveryMenuItem' }
+
+    DiscoveryMenuPreview:
+      type: object
+      properties:
+        available: { type: boolean }
+        permission: { type: string, enum: [NONE, OWNER_SUBMITTED, SOURCE_PERMITTED] }
+        reason: { type: [string, 'null'], description: 'What to show instead, when no preview may be served.' }
+        sections:
+          type: array
+          items: { $ref: '#/components/schemas/DiscoveryMenuSection' }
+
+    DiscoveryLocation:
+      type: object
+      properties:
+        latitude: { type: [number, 'null'], minimum: -90, maximum: 90 }
+        longitude: { type: [number, 'null'], minimum: -180, maximum: 180 }
+        timezone: { type: [string, 'null'], example: Europe/Berlin }
+        timezoneKnown: { type: boolean, description: 'False means no local time may be implied, so no open/closed claim.' }
+
+    DiscoveryPlaceSummary:
+      type: object
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        name: { type: string }
+        country: { $ref: '#/components/schemas/DiscoveryCountry' }
+        city: { type: [string, 'null'] }
+        region: { type: [string, 'null'] }
+        cuisines: { type: array, items: { type: string } }
+        links: { $ref: '#/components/schemas/DiscoveryLinks' }
+        status: { $ref: '#/components/schemas/DiscoveryVerificationStatus' }
+        menu: { $ref: '#/components/schemas/DiscoveryMenuState' }
+        ordering: { $ref: '#/components/schemas/DiscoveryOrdering' }
+        source: { $ref: '#/components/schemas/DiscoverySource' }
+
+    DiscoveryPlaceDetail:
+      allOf:
+        - $ref: '#/components/schemas/DiscoveryPlaceSummary'
+        - type: object
+          properties:
+            postalCode: { type: [string, 'null'], description: 'Optional, country-specific. Not a six-digit Indian PIN.' }
+            addressLine: { type: [string, 'null'] }
+            location: { $ref: '#/components/schemas/DiscoveryLocation' }
+            openingHoursRaw:
+              type: [string, 'null']
+              description: Verbatim source value, e.g. `Mo-Fr 11:00-22:00`. Never interpreted into an open/closed state.
+            dataOrigin: { type: string, enum: [IMPORTED, OWNER_SUBMITTED, PARTNER_FEED] }
+            menuPreview: { $ref: '#/components/schemas/DiscoveryMenuPreview' }
+
+    DiscoveryFacets:
+      type: object
+      properties:
+        totals:
+          type: object
+          properties:
+            places: { type: integer }
+            withMenuPreview: { type: integer }
+            orderableThroughCravedirect: { type: integer }
+        countries:
+          type: array
+          maxItems: 260
+          items:
+            allOf:
+              - $ref: '#/components/schemas/DiscoveryCountry'
+              - type: object
+                properties:
+                  count: { type: integer }
+        cities:
+          type: array
+          maxItems: 80
+          items:
+            type: object
+            properties:
+              country: { $ref: '#/components/schemas/DiscoveryCountry' }
+              city: { type: string }
+              count: { type: integer }
+        cuisines:
+          type: array
+          maxItems: 60
+          items:
+            type: object
+            properties:
+              cuisine: { type: string }
+              count: { type: integer }

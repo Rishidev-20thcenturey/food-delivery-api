@@ -8,6 +8,8 @@ every implemented route is documented there.
 - Base URL (local): `http://localhost:4000/api/v1`
 - Content type: `application/json` for request and response bodies (`/auth/logout` and `204` responses have no body)
 - Currency: INR. All money is an **integer in minor units (paise)**. `19900` means Rs 199.00. Never send decimals.
+  The one exception is the discovery directory (section 12), whose optional prices carry their own currency and
+  exponent and never enter cart or checkout pricing.
 - Timestamps: ISO 8601 strings in UTC (`2026-10-10T06:30:00.000Z`).
 - IDs: UUID v4 strings. Treat them as opaque.
 
@@ -157,6 +159,8 @@ Anyone may call the public catalogue endpoints without a token (restaurants, men
 - Restaurant list: `q`, `cuisine`, `open=true|false`, `postalCode` (6 digits), `sort=rating|name|newest|minOrder`
   (default `rating`).
 - Admin and owner lists accept `status` filters (see `openapi.yaml`).
+- Discovery lists use their own, deliberately smaller bounds: `limit` defaults to 12 with a maximum of 24, and
+  `page` is capped at 500 (section 12).
 
 ## 7. Idempotency
 
@@ -222,3 +226,51 @@ Full schemas are in `openapi.yaml`. The most-used objects:
   ignore unknown fields and handle unknown enum values gracefully.
 - Most request bodies are strict: unknown fields are rejected with `VALIDATION_ERROR`. Clients should send only the
   fields documented in `openapi.yaml`.
+
+## 12. Global discovery directory
+
+A public, read-only directory of **external restaurant listings** — `/discovery/places`,
+`/discovery/places/{placeId}`, `/discovery/facets`. It is independent of the orderable catalogue: nothing in
+sections 4–11 applies to it, and nothing in it changes those sections. Full design, licensing, and operator
+documentation is in [`DISCOVERY.md`](./DISCOVERY.md).
+
+Rules a client must follow:
+
+- **No authentication.** All three routes are public (`security: []`). They never return account data.
+- **It is not orderable by itself.** `ordering.available` is `true` only when an operator has linked the listing
+  to an `ACTIVE` CraveDirect restaurant, and `ordering.restaurantId` is then the id to pass to
+  `/restaurants/{restaurantId}` and `/cart`. An external `links.ordering` URL is somebody else's ordering page.
+- **Be honest about trust.** `status.sourceListed` is `true` for imported data. Label it "source-listed" or
+  "needs verification"; never label it owner-verified. `status.verification` is `SOURCE_LISTED`,
+  `NEEDS_REVIEW`, or `VERIFIED`.
+- **Nothing is inferred.** There is no rating, no price range, and no open/closed state. `openingHoursRaw` is
+  the source's own string; `location.timezoneKnown` is `false` when no timezone may be assumed. Fields the
+  source did not report are `null`, and `null` must be shown as missing, not fabricated.
+- **Prices are not INR.** When present, `price` is `{ amountMinor, currency, minorUnits, isEstimated }`, e.g.
+  `{ "amountMinor": 850, "currency": "EUR", "minorUnits": 2 }` is EUR 8.50 and
+  `{ "amountMinor": 980, "currency": "JPY", "minorUnits": 0 }` is JPY 980. Never convert them to INR and never
+  send them to `/cart` or `/checkout`.
+- **Show the attribution.** `source.name`, `source.licence`, `source.attribution`, `source.updatedAt`, and
+  `source.importedAt` must be displayed with the data. For OpenStreetMap imports the attribution is
+  "© OpenStreetMap contributors" under ODbL 1.0.
+- **Links are external.** Only `http(s)` values are ever returned. Open them in a new tab with
+  `rel="noopener noreferrer"`, and never in an iframe.
+- **Unpublished listings do not exist.** `/discovery/places/{placeId}` returns `404` (not `403`) for them, so
+  ids cannot be probed. A malformed id returns `400 VALIDATION_ERROR`.
+- **An empty catalogue is a valid answer.** `data: []` with `meta.total: 0` means no coverage for that filter
+  combination. Say so and offer a different location; do not substitute invented restaurants.
+
+Filters on `/discovery/places`:
+
+| Param | Rule |
+| --- | --- |
+| `q` | Prefix search over name, cuisines, city, region, country, and permitted dish names. Text with nothing searchable matches nothing. |
+| `dish` | Prefix search restricted to permitted structured menus; matches come back in `menu.matchedDishes`. |
+| `country` | ISO 3166-1 alpha-2, case-insensitive. Unknown codes are rejected. |
+| `city`, `region` | Exact, case-insensitive. Partial text belongs in `q`. |
+| `cuisine` | Up to three comma-separated labels, matched case-insensitively (OR). |
+| `hasMenu`, `orderable` | `true` / `false`. |
+| `sort` | `name` (default), `newest`, `updated`, `country`. All are deterministic. |
+
+`/discovery/facets` returns the countries (≤260), cities (≤80), and cuisines (≤60) that actually have coverage,
+with counts, plus `totals`. Use it to populate selectors so the UI never offers an empty filter.

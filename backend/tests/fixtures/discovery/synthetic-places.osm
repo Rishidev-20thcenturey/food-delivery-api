@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SYNTHETIC TEST FIXTURE — NOT REAL DATA.
+
+  Every place in this file is invented for tests. The names all begin with "Synthetic", the URLs point at
+  example.test, and the coordinates are arbitrary. Nothing here may be presented as a real restaurant, and
+  this file must never be imported into a production database.
+
+  Format: OSM XML 0.6, the format produced by both a Geofabrik regional extract and an Overpass
+  `[out:xml]` query. Real data is available under ODbL 1.0 — see https://www.openstreetmap.org/copyright.
+  This fixture deliberately contains no real OpenStreetMap content, so no attribution is owed for it.
+
+  It exercises the importer's honest paths: unnamed places, non-food places, lifecycle-tagged places,
+  ways with and without a centre, records outside the country filter, an unsafe URL scheme, an invalid
+  postcode, out-of-range coordinates, half a coordinate, an unknown timezone, a record with no country,
+  and a repeated element id.
+-->
+<osm version="0.6" generator="synthetic-test-fixture" upload="never">
+  <bounds minlat="50.9000000" minlon="6.9000000" maxlat="53.6000000" maxlon="13.5000000"/>
+
+  <!-- Valid fast_food place: full address, cuisines, website, source-reported hours. -->
+  <node id="9001" visible="true" version="3" changeset="100" timestamp="2026-08-01T10:00:00Z" user="synthetic" uid="1" lat="52.530000" lon="13.400000">
+    <tag k="amenity" v="fast_food"/>
+    <tag k="name" v="Synthetic Berlin Curry House"/>
+    <tag k="cuisine" v="german;curry"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:city" v="Berlin"/>
+    <tag k="addr:postcode" v="10115"/>
+    <tag k="addr:housenumber" v="12"/>
+    <tag k="addr:street" v="Synthetic Street"/>
+    <tag k="website" v="https://synthetic-berlin-curry.example.test/"/>
+    <tag k="menu" v="https://synthetic-berlin-curry.example.test/menu"/>
+    <tag k="opening_hours" v="Mo-Fr 11:00-22:00"/>
+  </node>
+
+  <!-- Same id repeated with a different name: the importer must collapse it and count one duplicate. -->
+  <node id="9001" visible="true" version="4" changeset="101" timestamp="2026-09-01T10:00:00Z" user="synthetic" uid="1" lat="52.530000" lon="13.400000">
+    <tag k="amenity" v="fast_food"/>
+    <tag k="name" v="Synthetic Berlin Curry House Renamed"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <!-- Outside the country filter: must be skipped when importing with - -country=DE. -->
+  <node id="9002" visible="true" version="1" changeset="102" timestamp="2026-08-02T10:00:00Z" user="synthetic" uid="1" lat="35.680000" lon="139.770000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Tokyo Ramen Bar"/>
+    <tag k="cuisine" v="ramen"/>
+    <tag k="addr:country" v="JP"/>
+    <tag k="addr:city" v="Tokyo"/>
+  </node>
+
+  <!-- No name: a directory entry without a name is not usable, so it is skipped. -->
+  <node id="9003" visible="true" version="1" changeset="103" timestamp="2026-08-03T10:00:00Z" user="synthetic" uid="1" lat="52.510000" lon="13.410000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <!-- A pub counts as a food place only because the source says it serves food. -->
+  <node id="9004" visible="true" version="1" changeset="104" timestamp="2026-08-04T10:00:00Z" user="synthetic" uid="1" lat="48.130000" lon="11.580000">
+    <tag k="amenity" v="pub"/>
+    <tag k="name" v="Synthetic Pub With Kitchen"/>
+    <tag k="cuisine" v="pub food"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:city" v="Munich"/>
+  </node>
+
+  <!-- A pub with no cuisine tag: drinks only, so it is not a food place. -->
+  <node id="9005" visible="true" version="1" changeset="105" timestamp="2026-08-05T10:00:00Z" user="synthetic" uid="1" lat="48.140000" lon="11.590000">
+    <tag k="amenity" v="pub"/>
+    <tag k="name" v="Synthetic Drinks Only Pub"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <!-- Food shop rather than an amenity. -->
+  <node id="9006" visible="true" version="1" changeset="106" timestamp="2026-08-06T10:00:00Z" user="synthetic" uid="1" lat="53.550000" lon="9.990000">
+    <tag k="shop" v="bakery"/>
+    <tag k="name" v="Synthetic Bakery Corner"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:city" v="Hamburg"/>
+    <tag k="contact:website" v="https://synthetic-bakery.example.test"/>
+  </node>
+
+  <!-- Lifecycle tagging: this place no longer exists and must never reach the directory. -->
+  <node id="9007" visible="true" version="1" changeset="107" timestamp="2026-08-07T10:00:00Z" user="synthetic" uid="1" lat="52.520000" lon="13.420000">
+    <tag k="disused:amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Gone Restaurant"/>
+    <tag k="cuisine" v="italian"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <!-- Not a food place at all. -->
+  <node id="9008" visible="true" version="1" changeset="108" timestamp="2026-08-08T10:00:00Z" user="synthetic" uid="1" lat="52.540000" lon="13.430000">
+    <tag k="amenity" v="parking"/>
+    <tag k="name" v="Synthetic Car Park"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <!-- Unsafe URL scheme: the link must be dropped, the record must still be imported. -->
+  <node id="9009" visible="true" version="1" changeset="109" timestamp="2026-08-09T10:00:00Z" user="synthetic" uid="1" lat="52.550000" lon="13.440000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Bad Link Diner"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:city" v="Berlin"/>
+    <tag k="website" v="javascript:alert(1)"/>
+    <tag k="ordering" v="https://synthetic-order.example.test/9009"/>
+  </node>
+
+  <!-- Postcode that cannot be a real one: dropped, record still imported. -->
+  <node id="9010" visible="true" version="1" changeset="110" timestamp="2026-08-10T10:00:00Z" user="synthetic" uid="1" lat="52.560000" lon="13.450000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Bad Postcode Diner"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:postcode" v="1"/>
+  </node>
+
+  <!-- Latitude out of range: rejected. Half a coordinate is worse than none. -->
+  <node id="9011" visible="true" version="1" changeset="111" timestamp="2026-08-11T10:00:00Z" user="synthetic" uid="1" lat="152.500000" lon="13.460000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Out Of Range Diner"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <node id="9012" visible="true" version="1" changeset="112" timestamp="2026-08-12T10:00:00Z" user="synthetic" uid="1" lat="52.570000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Half Coordinate Diner"/>
+    <tag k="addr:country" v="DE"/>
+  </node>
+
+  <!-- No country of its own: takes the importer's - -country default. -->
+  <node id="9013" visible="true" version="1" changeset="113" timestamp="2026-08-13T10:00:00Z" user="synthetic" uid="1" lat="52.580000" lon="13.470000">
+    <tag k="amenity" v="cafe"/>
+    <tag k="name" v="Synthetic No Country Cafe"/>
+    <tag k="cuisine" v="coffee_shop"/>
+    <tag k="addr:city" v="Potsdam"/>
+  </node>
+
+  <!-- Unknown timezone: dropped rather than stored as if it were real. -->
+  <node id="9014" visible="true" version="1" changeset="114" timestamp="2026-08-14T10:00:00Z" user="synthetic" uid="1" lat="52.590000" lon="13.480000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Bad Timezone Diner"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="timezone" v="Mars/Olympus"/>
+  </node>
+
+  <!-- Valid IANA timezone: kept, and the only reason we would ever reason about local time. -->
+  <node id="9015" visible="true" version="1" changeset="115" timestamp="2026-08-15T10:00:00Z" user="synthetic" uid="1" lat="52.600000" lon="13.490000">
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Timezoned Diner"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:city" v="Berlin"/>
+    <tag k="timezone" v="Europe/Berlin"/>
+    <tag k="opening_hours" v="Tu-Su 17:00-23:00"/>
+  </node>
+
+  <!-- A way with a centre: coordinates come from <center>, not from resolving node references. -->
+  <way id="9101" visible="true" version="1" changeset="116" timestamp="2026-08-16T10:00:00Z" user="synthetic" uid="1">
+    <nd ref="1001"/>
+    <nd ref="1002"/>
+    <nd ref="1003"/>
+    <center lat="50.940000" lon="6.960000"/>
+    <tag k="amenity" v="restaurant"/>
+    <tag k="name" v="Synthetic Way Restaurant"/>
+    <tag k="cuisine" v="regional"/>
+    <tag k="addr:country" v="DE"/>
+    <tag k="addr:city" v="Cologne"/>
+  </way>
+
+  <!-- A way with no centre: imported with NULL coordinates instead of a guessed centroid. -->
+  <way id="9102" visible="true" version="1" changeset="117" timestamp="2026-08-17T10:00:00Z" user="synthetic" uid="1">
+    <nd ref="2001"/>
+    <nd ref="2002"/>
+    <tag k="amenity" v="cafe"/>
+    <tag k="name" v="Synthetic Centreless Cafe"/>
+    <tag k="addr:country" v="DE"/>
+  </way>
+</osm>
